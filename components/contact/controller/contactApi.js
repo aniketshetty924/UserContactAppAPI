@@ -18,7 +18,6 @@ const createContact = (req, res) => {
       throw new Error("invalid first name and last name!");
 
     const contact = User.newContact(userID, firstName, lastName);
-
     res.status(201).json(contact);
   } catch (error) {
     res.status(500).json({ error: "Something went wrong..." });
