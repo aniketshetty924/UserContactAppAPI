@@ -1,4 +1,5 @@
 const Contact = require("../../contact/service/contact.js");
+const bcrypt = require("bcrypt");
 class User {
   //firstName,lastName,isAdmin,isActive,contacts
 
@@ -8,56 +9,171 @@ class User {
   static allStaff = [];
   //getters
 
-  constructor(userID, firstName, lastName, isAdmin, isActive, contacts) {
+  constructor(
+    userID,
+    userName,
+    firstName,
+    lastName,
+    password,
+    isAdmin,
+    isActive,
+    contacts
+  ) {
     this.userID = userID;
+    this.userName = userName;
     this.firstName = firstName;
     this.lastName = lastName;
+    this.password = password;
     this.isAdmin = isAdmin;
     this.isActive = isActive;
     this.contacts = contacts;
   }
 
-  //user factory function
-  static newUser(firstName, lastName, isAdmin) {
+  //create admin
+  static async createAdmin(firstName, lastName, username, password) {
     try {
+      const hashedPassword = await bcrypt.hash(password, 10);
       let userID = User.allUsersID++;
-      let tempUser = new User(userID, firstName, lastName, isAdmin, true, []);
-      if (isAdmin == true) {
-        User.allAdmin.push(tempUser);
-      } else {
-        User.allStaff.push(tempUser);
+      let tempAdmin = new User(
+        userID,
+        username,
+        firstName,
+        lastName,
+        hashedPassword,
+        true,
+        true,
+        []
+      );
+      User.allAdmin.push(tempAdmin);
+      User.allUsers.push(tempAdmin);
+      return tempAdmin;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  //user factory function
+  async createStaff(firstName, lastName, username, password) {
+    try {
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
       }
-      User.allUsers.push(tempUser);
-      return tempUser;
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      let userID = User.allUsersID++;
+      let tempStaff = new User(
+        userID,
+        username,
+        firstName,
+        lastName,
+        hashedPassword,
+        false,
+        true,
+        []
+      );
+
+      User.allStaff.push(tempStaff);
+      User.allUsers.push(tempStaff);
+      return tempStaff;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  static findAdmin() {
+    try {
+      return User.allAdmin[0];
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  findAdminByUserName(userName) {
+    try {
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
+      }
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
+      let allAdmins = User.getAllAdmin();
+      for (admin of allAdmins) {
+        if (admin.userName == userName) {
+          return admin;
+        }
+      }
+      return null;
     } catch (error) {
       console.log(error);
     }
   }
 
-  //get all users
-  static getAllUsers() {
-    let allUsers = User.allUsers;
-    for (let user of allUsers) {
-      if (user.isActive == true) {
-        allUsers.push(user);
+  findUser(username) {
+    try {
+      if (!this.isAdmin) throw new Error("only admins get users..");
+
+      for (let user of User.allUsers) {
+        if (user.username == username && user.isActive) {
+          console.log(`user : ${user}`);
+          return user;
+        }
       }
+      return null;
+    } catch (error) {
+      console.log(error);
     }
-    return allUsers;
   }
+  //find staff by username
+  findUserByUsername(username) {
+    try {
+      let allStaffs = User.allStaff;
+      for (let user of allStaffs) {
+        if (user.username == username && user.isActive == true) {
+          return user;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // //get all users
+  // static getAllUsers() {
+  //   let allUsers = User.allUsers;
+  //   let users = [];
+  //   for (let user of allUsers) {
+  //     if (user.isActive == true) {
+  //       users.push(user);
+  //     }
+  //   }
+  //   return allUsers;
+  // }
   //get all admin
   static getAllAdmin() {
     return User.allAdmin;
   }
   //get all staffs
-  static getAllStaff() {
-    let allStaffs = User.allStaff;
-    let staffList = [];
-    for (let staff of allStaffs) {
-      if (staff.isActive) {
-        staffList.push(staff);
+  getAllStaff() {
+    try {
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
       }
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
+      let allStaffs = User.allStaff;
+      let staffList = [];
+      for (let staff of allStaffs) {
+        if (staff.isActive) {
+          staffList.push(staff);
+        }
+      }
+      return staffList;
+    } catch (error) {
+      console.log(error);
     }
-    return staffList;
   }
 
   //get all user contacts
@@ -79,8 +195,14 @@ class User {
     }
   }
   //get staff by id
-  static getStaffByID(staffID) {
+  getStaffByID(staffID) {
     try {
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
+      }
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
       let allStaffs = User.allStaff;
       for (let staff of allStaffs) {
         if (staff.userID == staffID) {
@@ -156,9 +278,15 @@ class User {
     }
   }
   //update staff by id
-  static updateUserByID(staffID, parameter, value) {
+  updateUserByID(staffID, parameter, value) {
     try {
-      let foundStaff = User.getUserByID(staffID);
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
+      }
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
+      let foundStaff = this.getStaffByID(staffID);
 
       if (!foundStaff.isActive)
         throw new Error(
@@ -182,9 +310,15 @@ class User {
   }
 
   //delete user by id
-  static deleteUserByID(staffID) {
+  deleteUserByID(staffID) {
     try {
-      let foundStaff = User.getUserByID(staffID);
+      if (!this.isAdmin) {
+        throw new Error("user is not Admin");
+      }
+      if (!this.isActive) {
+        throw new Error("admin is not active");
+      }
+      let foundStaff = this.getStaffByID(staffID);
       if (!foundStaff.isActive)
         throw new Error(
           `The given staff with ID ${staffID} is already been deleted earlier....,NOTHING to delete now!`
@@ -199,19 +333,19 @@ class User {
   }
 
   //creating contact object for particular staff object
-  static newContact(userID, firstName, lastName) {
+  newContact(firstName, lastName) {
     try {
-      let user = User.getStaffByID(userID);
+      if (this.isAdmin) {
+        throw new Error("Admin cannot create contact");
+      }
+      if (!this.isActive) {
+        throw new Error("Inactive users cannot create contacts");
+      }
 
-      if (user.isAdmin == true)
-        throw new Error("Contacts can only be created for staffs...");
-      if (user.isActive == false)
-        throw new Error(`User with ${userID} has been deleted ...`);
-
-      let contactID = user.contacts.length;
+      let contactID = this.contacts.length;
       let createdContact = Contact.newContact(firstName, lastName, contactID);
 
-      user.contacts.push(createdContact);
+      this.contacts.push(createdContact);
       return createdContact;
     } catch (error) {
       console.log(error);
@@ -246,18 +380,21 @@ class User {
     }
   }
 
-  //update staff contact by id
-  static updateStaffContactByID(staffID, contactID, parameter, value) {
-    try {
-      let staff = User.getUserByID(staffID);
-      if (staff.isAdmin)
-        throw new Error("only staffs can update their contacts...");
-      if (!staff.isActive)
-        throw new Error(
-          "The  User  is already been deleted earlier...., So it cannot update a contacts now!"
-        );
+  //get all contacts
+  getAllContacts() {
+    return this.contacts.filter((contact) => contact.isActive);
+  }
 
-      let staffContactToUpdate = staff.getContactByID(contactID);
+  //update staff contact by id
+  updateStaffContactByID(contactID, parameter, value) {
+    try {
+      if (this.isAdmin) {
+        throw new Error("Admin cannot update contact");
+      }
+      if (!this.isActive) {
+        throw new Error("Inactive users cannot update contacts");
+      }
+      let staffContactToUpdate = this.getContactByID(contactID);
       staffContactToUpdate.updateContactByID(parameter, value);
 
       return staffContactToUpdate;
@@ -267,35 +404,32 @@ class User {
   }
 
   //delete staff contact by id
-  static deleteStaffContactByID(staffID, contactID) {
+  deleteStaffContactByID(contactID) {
     try {
-      let staff = User.getUserByID(staffID);
-      if (staff.isAdmin)
-        throw new Error("only staffs can update their contacts...");
-      if (!staff.isActive)
-        throw new Error(
-          "The  User  is already been deleted earlier...., So it cannot update a contacts now!"
-        );
-
-      let staffContactToDelete = staff.getContactByID(contactID);
+      if (this.isAdmin) {
+        throw new Error("Admin cannot delete contact");
+      }
+      if (!this.isActive) {
+        throw new Error("Inactive users cannot delete contacts");
+      }
+      let staffContactToDelete = this.getContactByID(contactID);
       staffContactToDelete.deleteStaffContactByID(contactID);
     } catch (error) {
       console.log(error);
     }
   }
 
-  static newContactDetails(staffID, contactID, numberType, emailType) {
+  newContactDetails(contactID, numberType, emailType) {
     try {
-      let staff = User.getStaffByID(staffID);
-      if (staff.isAdmin)
+      if (this.isAdmin)
         throw new Error("Only staffs can create new contact details....");
-      if (!staff.isActive)
+      if (!this.isActive)
         throw new Error("OOps the current staff is does not exists!");
 
       if (typeof numberType != "object") throw new Error("invalid numberType");
       if (typeof emailType != "object") throw new Error("invalid email type!");
 
-      let staffContact = staff.getContactByID(contactID);
+      let staffContact = this.getContactByID(contactID);
       return staffContact.newContactDetails(numberType, emailType);
     } catch (error) {
       console.log(error);
@@ -303,15 +437,14 @@ class User {
   }
 
   //get all contact details
-  static getAllContactDetails(staffID, contactID) {
+  getAllContactDetails(contactID) {
     try {
-      let staff = User.getStaffByID(staffID);
-      if (staff.isAdmin)
+      if (this.isAdmin)
         throw new Error("Only staffs can create new contact details....");
-      if (!staff.isActive)
+      if (!this.isActive)
         throw new Error("OOps the current staff is does not exists!");
 
-      let staffContact = staff.getContactByID(contactID);
+      let staffContact = this.getContactByID(contactID);
       let allContactDetails = staffContact.getContactDetails();
       return allContactDetails;
     } catch (error) {
@@ -335,32 +468,31 @@ class User {
       console.log(error);
     }
   }
-  //get contact details by id of user contact
-  static getContactDetailsByID(staffID, contactID, cdID) {
-    try {
-      let staff = User.getStaffByID(staffID);
-      if (staff.isAdmin)
-        throw new Error("Only staffs can create new contact details....");
-      if (!staff.isActive)
-        throw new Error("OOps the current staff is does not exists!");
-      let staffContact = staff.getContactByID(contactID);
-      let contactDetail = staffContact.getContactDetailsByID(cdID);
-      return contactDetail;
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  // //get contact details by id of user contact
+  // static getContactDetailsByID(staffID, contactID, cdID) {
+  //   try {
+  //     let staff = User.getStaffByID(staffID);
+  //     if (staff.isAdmin)
+  //       throw new Error("Only staffs can create new contact details....");
+  //     if (!staff.isActive)
+  //       throw new Error("OOps the current staff is does not exists!");
+  //     let staffContact = staff.getContactByID(contactID);
+  //     let contactDetail = staffContact.getContactDetailsByID(cdID);
+  //     return contactDetail;
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 
   //update contact details of particular staff contact by id
-  static updateContactDetailsByID(staffID, contactID, cdID, parameter, value) {
+  updateContactDetailsByID(contactID, cdID, parameter, value) {
     try {
-      let staff = User.getStaffByID(staffID);
-      if (staff.isAdmin)
+      if (this.isAdmin)
         throw new Error("Only staffs can create new contact details....");
-      if (!staff.isActive)
+      if (!this.isActive)
         throw new Error("OOps the current staff is does not exists!");
 
-      let staffContact = staff.getContactByID(contactID);
+      let staffContact = this.getContactByID(contactID);
       let updatedContactDetail = staffContact.updateContactDetailsByID(
         cdID,
         parameter,
@@ -374,15 +506,14 @@ class User {
   }
 
   //delete contact details by id
-  static deleteStaffContactDetailByID(staffID, contactID, cdID) {
+  deleteStaffContactDetailByID(contactID, cdID) {
     try {
-      let staff = User.getStaffByID(staffID);
-      if (staff.isAdmin)
+      if (this.isAdmin)
         throw new Error("Only staffs can create new contact details....");
-      if (!staff.isActive)
+      if (!this.isActive)
         throw new Error("OOps the current staff is does not exists!");
 
-      let staffContact = staff.getContactByID(contactID);
+      let staffContact = this.getContactByID(contactID);
 
       staffContact.deleteStaffContactDetailByID(cdID);
       console.log(

@@ -6,13 +6,19 @@ const {
   updateUserByID,
   deleteUserByID,
 } = require("./controller/userApi.js");
+const {
+  verifyAdmin,
+  verifyStaff,
+} = require("../../middleware/authorization.js");
 const contactRouter = require("../contact/index.js");
 
 const userRouter = express.Router();
 // api/v1/contact-app/user
 
-//create admin
-userRouter.post("/", createUser);
+// //create admin
+// userRouter.post("/", );
+//create user
+userRouter.post("/", verifyAdmin, createUser);
 
 //get user by id
 //get

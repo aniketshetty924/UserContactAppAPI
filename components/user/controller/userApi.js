@@ -1,10 +1,20 @@
 const User = require("../service/user.js");
+const BadRequest = require("../../../errors/badRequest.js");
+const NotFoundError = require("../../../errors/notFoundError.js");
+const Logger = require("../../../utils/logger.js");
+const badRequest = require("../../../errors/badRequest.js");
 
+//validation functions
+const validateID = (id) => {
+  if (typeof id != "number") throw new BadRequest("invalid id type...");
+  if (id < 0) throw new BadRequest("id cannot be less than 0!");
+};
 //create user
 //post request
-const createUser = (req, res) => {
+const createUser = async (req, res, next) => {
   try {
-    const { firstName, lastName, isAdmin } = req.body;
+    Logger.info("create user called...");
+    const { firstName, lastName, username, password } = req.body;
     // console.log(`${firstName} - type :- ${typeof firstName}`);
     // console.log(`${lastName} - type :- ${typeof lastName}`);
     // console.log(`${isAdmin} - type :- ${typeof isAdmin}`);
@@ -12,14 +22,23 @@ const createUser = (req, res) => {
     if (typeof lastName != "string") throw new Error("invalid last name...");
     if (firstName == lastName)
       throw new Error("invalid first name and last name...");
-    if (isAdmin != true && isAdmin != false)
-      throw new Error("invalid isAdmin value...");
+    if (typeof username != "string") throw new Error("invalid username type");
+    if (typeof password != "string") throw new Error("invalid password type");
 
-    const user = User.newUser(firstName, lastName, isAdmin);
+    let admin = User.allAdmin[0];
+
+    const user = await admin.createStaff(
+      firstName,
+      lastName,
+      username,
+      password
+    );
+    if (!user) {
+      throw new BadRequest("user could not been created");
+    }
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 
