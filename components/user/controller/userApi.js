@@ -43,64 +43,71 @@ const createUser = async (req, res, next) => {
 };
 
 //get user by id
-const getUserByID = (req, res) => {
+const getUserByID = (req, res, next) => {
   try {
+    Logger.info("getUserByID function called...");
     let userID = parseInt(req.params.id);
-    if (typeof userID != "number")
-      throw new Error("invalid user id... User id should be a number");
-    if (userID < 0) throw new Error("invalid user id...");
-    // console.log(`User id : ${userID} --> ${typeof userID}`);
-    const user = User.getUserByID(userID);
+    validateID(userID);
+    let admin = User.allAdmin[0];
+
+    const user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
+    Logger.info("getUser controller ended");
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 
 //get all users
-const getAllUsers = (req, res) => {
+const getAllUsers = (req, res, next) => {
   try {
-    let allUsers = User.getAllUsers();
+    Logger.info("getAllUsers called...");
+    let admin = User.allAdmin[0];
+    let allUsers = admin.getAllStaff();
     if (allUsers.length == 0) throw new Error("No users found...");
     res.status(200).json(allUsers);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 
 //update staff by id
-const updateUserByID = (req, res) => {
+const updateUserByID = (req, res, next) => {
   try {
+    Logger.info("updateUser called...");
     const { parameter, value } = req.body;
     const userID = parseInt(req.params.id);
-    if (isNaN(userID)) throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
+    validateID(userID);
     if (typeof parameter != "string")
       throw new Error("invalid parameter type...");
-    const updatedUser = User.updateUserByID(userID, parameter, value);
+    let admin = User.allAdmin[0];
+    const updatedUser = admin.updateUserByID(userID, parameter, value);
     if (updatedUser == null)
       throw new Error("User not found or updation failed...");
+    Logger.info("updateUser controller ended");
     res.status(200).json(updatedUser);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
-    console.log(error);
+    next(error);
   }
 };
 
 const deleteUserByID = (req, res) => {
   try {
+    Logger.info("deleteUser called");
     const userID = parseInt(req.params.id);
-    if (typeof userID != "number") throw new Error("invalid user id type...");
-    if (userID < 0) throw new Error("invalid user id!");
+    validateID(userID);
+    let admin = User.allAdmin[0];
     try {
-      User.deleteUserByID(userID);
+      admin.deleteUserByID(userID);
     } catch (error) {
       return res
         .status(404)
         .json({ error: "User not found or deletion failed" });
     }
+    Logger.info("deleteUser controller Ended");
     res.status(200).json({
       message: `User with ID ${userID} has been deleted successfully`,
     });

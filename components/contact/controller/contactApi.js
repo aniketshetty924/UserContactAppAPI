@@ -1,124 +1,142 @@
 const User = require("../../user/service/user.js");
-
+const Logger = require("../../../utils/logger.js");
+const NotFoundError = require("../../../errors/notFoundError.js");
+const BadRequest = require("../../../errors/badRequest.js");
+//validation functions
+const validateID = (id) => {
+  if (typeof id != "number") throw new BadRequest("invalid id type...");
+  if (id < 0) throw new BadRequest("id cannot be less than 0!");
+};
 //create contact by user id
 //post
-const createContact = (req, res) => {
+const createContact = (req, res, next) => {
   try {
+    Logger.info("createContact called...");
     const { firstName, lastName } = req.body;
     const userID = parseInt(req.params.userID);
     // let user = User.getUserByID(userID);
-
-    if (typeof userID != "number") throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
+    validateID(userID);
     if (typeof firstName != "string") throw new Error("invalid first name");
 
     if (typeof lastName != "string") throw new Error("invalid last name");
 
     if (firstName === lastName)
       throw new Error("invalid first name and last name!");
+    let admin = User.allAdmin[0];
 
-    const contact = User.newContact(userID, firstName, lastName);
+    let user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
+    const contact = user.newContact(firstName, lastName);
+    Logger.info("createContact controller ended");
     res.status(201).json(contact);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 
 //get all user contacts
-const getAllContactsOfUser = (req, res) => {
+const getAllContactsOfUser = (req, res, next) => {
   try {
+    Logger.info("getAllContactsOfUser called");
     const userID = parseInt(req.params.userID);
-    if (typeof userID != "number") throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
-    let allContacts = User.getUserContacts(userID);
+    validateID(userID);
+    let admin = User.allAdmin[0];
+
+    let user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
+    let allContacts = user.getAllContacts();
     if (allContacts.length == 0) throw new Error("No contacts found...");
+    Logger.info("getAllContactsOfUser controller ended.");
     res.status(200).json(allContacts);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 //get contact by id
-const getContactByID = (req, res) => {
+const getContactByID = (req, res, next) => {
   try {
+    Logger.info("getContactByID called");
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
-    if (typeof userID != "number") throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
-    let user = User.getUserByID(userID);
-    if (typeof contactID != "number")
-      throw new Error("invalid contact id type...");
-    if (contactID < 0) throw new Error("invalid contact id!");
-    if (contactID >= user.contacts.length)
-      throw new Error("invalid contact id..");
+    validateID(userID);
+    validateID(contactID);
+    let admin = User.allAdmin[0];
+
+    let user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
 
     const contact = user.getContactByID(contactID);
+    Logger.info("getContactByID controller ended.");
 
     res.status(200).json(contact);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong..." });
-    console.log(error);
+    next(error);
   }
 };
 
-const updateContactByID = (req, res) => {
+const updateContactByID = (req, res, next) => {
   try {
+    Logger.info("updateContactByID called");
     const { parameter, value } = req.body;
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
-    if (typeof userID != "number") throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
-    let user = User.getUserByID(userID);
-    if (typeof contactID != "number")
-      throw new Error("invalid contact id type...");
-    if (contactID < 0) throw new Error("invalid contact id!");
-    if (contactID >= user.contacts.length)
-      throw new Error("invalid contact id..");
+    validateID(userID);
+    validateID(contactID);
+    let admin = User.allAdmin[0];
+
+    let user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
     if (typeof parameter != "string")
       throw new Error("invalid parameter type...");
 
-    const updatedContact = User.updateStaffContactByID(
-      userID,
+    const updatedContact = user.updateStaffContactByID(
       contactID,
       parameter,
       value
     );
     if (updatedContact == null)
       throw new Error("Contact not found or updation failed...");
+    Logger.info("updateContactByID controller ended");
     res.status(200).json(updatedContact);
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
-    console.log(error);
+    next(error);
   }
 };
 
 const deleteContactByID = (req, res) => {
   try {
+    Logger.info("deleteContactByID called");
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
-    if (typeof userID != "number") throw new Error("invalid user id...");
-    if (userID < 0) throw new Error("invalid user id!");
-    let user = User.getUserByID(userID);
-    if (typeof contactID != "number")
-      throw new Error("invalid contact id type...");
-    if (contactID < 0) throw new Error("invalid contact id!");
-    if (contactID >= user.contacts.length)
-      throw new Error("invalid contact id..");
+    validateID(userID);
+    validateID(contactID);
+    let admin = User.allAdmin[0];
 
+    let user = admin.getStaffByID(userID);
+    if (!user) {
+      throw new NotFoundError("user not found");
+    }
     try {
-      User.deleteStaffContactByID(userID, contactID);
+      user.deleteStaffContactByID(contactID);
     } catch (error) {
       return res
         .status(404)
         .json({ error: "Contact not found or deletion failed" });
     }
+    Logger.info("deleteContactByID called");
     res.status(200).json({
       message: `Contact with ID ${contactID} has been deleted successfully...`,
     });
   } catch (error) {
-    res.status(500).json({ error: "Something went wrong" });
-    console.log(error);
+    next(error);
   }
 };
 

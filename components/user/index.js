@@ -22,16 +22,16 @@ userRouter.post("/", verifyAdmin, createUser);
 
 //get user by id
 //get
-userRouter.get("/:id", getUserByID);
+userRouter.get("/:id", verifyAdmin, getUserByID);
 
 //get all users
-userRouter.get("/", getAllUsers);
+userRouter.get("/", verifyAdmin, getAllUsers);
 
 //update user by id
-userRouter.put("/:id", updateUserByID);
+userRouter.put("/:id", verifyAdmin, updateUserByID);
 
 //delete user by id
-userRouter.delete("/:id", deleteUserByID);
+userRouter.delete("/:id", verifyAdmin, deleteUserByID);
 
-userRouter.use("/:userID/contact", contactRouter);
+userRouter.use("/:userID/contact", verifyStaff, contactRouter);
 module.exports = userRouter;

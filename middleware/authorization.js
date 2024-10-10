@@ -40,6 +40,7 @@ const verifyStaff = (req, res, next) => {
     }
     Logger.info("verifystaff ended");
     Logger.info("next called");
+
     next();
   } catch (error) {
     next(error);

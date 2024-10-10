@@ -114,7 +114,7 @@ class User {
       if (!this.isAdmin) throw new Error("only admins get users..");
 
       for (let user of User.allUsers) {
-        if (user.username == username && user.isActive) {
+        if (user.userName == username && user.isActive) {
           console.log(`user : ${user}`);
           return user;
         }

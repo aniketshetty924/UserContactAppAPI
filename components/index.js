@@ -45,8 +45,8 @@ router.post("/login", async (req, res, next) => {
     // if (typeof password != "string") {
     //   throw new BadRequest("password is invalid");
     // }
-    let admin = User.allAdmin[0];
-    console.log(admin);
+    // let admin = User.allAdmin[0];
+    // console.log(admin);
     const user = admin.findUser(username);
     console.log(user);
     if (!user) throw new NotFoundError("user does not exists...");
