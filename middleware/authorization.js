@@ -38,6 +38,11 @@ const verifyStaff = (req, res, next) => {
         "Admin cant do this oprations , only staff can do..."
       );
     }
+    const userID = parseInt(req.parasm.userID);
+    if (userID != payload.id)
+      throw new UnauthorizedError(
+        "You are not authorized to access this account..."
+      );
     Logger.info("verifystaff ended");
     Logger.info("next called");
 
