@@ -25,9 +25,13 @@ const createUser = async (req, res, next) => {
     if (typeof username != "string") throw new Error("invalid username type");
     if (typeof password != "string") throw new Error("invalid password type");
 
-    let admin = User.allAdmin[0];
+    //let admin = User.allAdmin[0];
+    // let admin = await User.findAdmin(1);
+    // admin = admin.toJSON();
+    // console.log("iint");
+    // console.log(admin);
 
-    const user = await admin.createStaff(
+    const user = await User.createStaff(
       firstName,
       lastName,
       username,
@@ -36,6 +40,7 @@ const createUser = async (req, res, next) => {
     if (!user) {
       throw new BadRequest("user could not been created");
     }
+    Logger.info("create user controller ended...");
     res.status(201).json(user);
   } catch (error) {
     next(error);
@@ -43,14 +48,13 @@ const createUser = async (req, res, next) => {
 };
 
 //get user by id
-const getUserByID = (req, res, next) => {
+const getUserByID = async (req, res, next) => {
   try {
     Logger.info("getUserByID function called...");
     let userID = parseInt(req.params.id);
     validateID(userID);
-    let admin = User.allAdmin[0];
 
-    const user = admin.getStaffByID(userID);
+    const user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
@@ -62,20 +66,21 @@ const getUserByID = (req, res, next) => {
 };
 
 //get all users
-const getAllUsers = (req, res, next) => {
+const getAllUsers = async (req, res, next) => {
   try {
     Logger.info("getAllUsers called...");
-    let admin = User.allAdmin[0];
-    let allUsers = admin.getAllStaff();
+
+    let allUsers = await User.getAllStaff();
     if (allUsers.length == 0) throw new Error("No users found...");
     res.status(200).json(allUsers);
+    Logger.info("get all users controller ended...");
   } catch (error) {
     next(error);
   }
 };
 
 //update staff by id
-const updateUserByID = (req, res, next) => {
+const updateUserByID = async (req, res, next) => {
   try {
     Logger.info("updateUser called...");
     const { parameter, value } = req.body;
@@ -83,8 +88,7 @@ const updateUserByID = (req, res, next) => {
     validateID(userID);
     if (typeof parameter != "string")
       throw new Error("invalid parameter type...");
-    let admin = User.allAdmin[0];
-    const updatedUser = admin.updateUserByID(userID, parameter, value);
+    const updatedUser = await User.updateUserByID(userID, parameter, value);
     if (updatedUser == null)
       throw new Error("User not found or updation failed...");
     Logger.info("updateUser controller ended");
@@ -99,13 +103,12 @@ const deleteUserByID = (req, res) => {
     Logger.info("deleteUser called");
     const userID = parseInt(req.params.id);
     validateID(userID);
-    let admin = User.allAdmin[0];
     try {
-      admin.deleteUserByID(userID);
+      User.deleteUserByID(userID);
     } catch (error) {
       return res
         .status(404)
-        .json({ error: "User not found or deletion failed" });
+        .json({ message: "User not found or deletion failed" });
     }
     Logger.info("deleteUser controller Ended");
     res.status(200).json({
@@ -113,7 +116,7 @@ const deleteUserByID = (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: "Something went wrong" });
-    console.log(error);
+    next(error);
   }
 };
 module.exports = {

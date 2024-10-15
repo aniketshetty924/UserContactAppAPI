@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const Logger = require("../utils/logger.js");
 const secreteKey = "contact@123";
 const UnauthorizedError = require("../errors/unauthorizedError.js");
+const User = require("../components/user/service/user.js");
+const NotFoundError = require("../errors/notFoundError.js");
 
 const verifyAdmin = (req, res, next) => {
   try {
@@ -24,7 +26,7 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-const verifyStaff = (req, res, next) => {
+const verifyStaff = async (req, res, next) => {
   try {
     console.log("verifystaff started");
     if (!req.cookies["auth"] && !req.headers["auth"]) {
@@ -33,13 +35,25 @@ const verifyStaff = (req, res, next) => {
     //token??
     let token = req.cookies["auth"].split(" ")[2];
     let payload = Payload.verifyToken(token);
+    console.log("payload...");
+    console.log(payload);
     if (payload.isAdmin) {
       throw new UnauthorizedError(
         "Admin cant do this oprations , only staff can do..."
       );
     }
-    const userID = parseInt(req.parasm.userID);
-    if (userID != payload.id)
+    const userId = parseInt(req.params.userID);
+    console.log("userID", userId);
+    let user = await User.getStaffByID(userId);
+    console.log("user....");
+    console.log(user);
+    if (!user)
+      throw new NotFoundError(
+        "User has been already deleted or user does not exists.."
+      );
+    req.user = user;
+    console.log(`payload id --> ${payload.id}`);
+    if (userId != payload.id)
       throw new UnauthorizedError(
         "You are not authorized to access this account..."
       );

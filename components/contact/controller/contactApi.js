@@ -9,12 +9,15 @@ const validateID = (id) => {
 };
 //create contact by user id
 //post
-const createContact = (req, res, next) => {
+const createContact = async (req, res, next) => {
   try {
     Logger.info("createContact called...");
     const { firstName, lastName } = req.body;
     const userID = parseInt(req.params.userID);
     // let user = User.getUserByID(userID);
+    console.log(`firstName ${firstName}`);
+    console.log(`lastName ${lastName}`);
+    console.log(`userID ${userID}`);
     validateID(userID);
     if (typeof firstName != "string") throw new Error("invalid first name");
 
@@ -22,13 +25,13 @@ const createContact = (req, res, next) => {
 
     if (firstName === lastName)
       throw new Error("invalid first name and last name!");
-    let admin = User.allAdmin[0];
+    // let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
-    if (!user) {
-      throw new NotFoundError("user not found");
-    }
-    const contact = user.newContact(firstName, lastName);
+    // let user = admin.getStaffByID(userID);
+    // if (!user) {
+    //   throw new NotFoundError("user not found");
+    // }
+    const contact = await User.newContact(userID, firstName, lastName, true);
     Logger.info("createContact controller ended");
     res.status(201).json(contact);
   } catch (error) {
@@ -37,19 +40,17 @@ const createContact = (req, res, next) => {
 };
 
 //get all user contacts
-const getAllContactsOfUser = (req, res, next) => {
+const getAllContactsOfUser = async (req, res, next) => {
   try {
     Logger.info("getAllContactsOfUser called");
     const userID = parseInt(req.params.userID);
     validateID(userID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
-    let allContacts = user.getAllContacts();
-    if (allContacts.length == 0) throw new Error("No contacts found...");
+    const allContacts = await User.getAllContacts(userID);
     Logger.info("getAllContactsOfUser controller ended.");
     res.status(200).json(allContacts);
   } catch (error) {
@@ -57,21 +58,20 @@ const getAllContactsOfUser = (req, res, next) => {
   }
 };
 //get contact by id
-const getContactByID = (req, res, next) => {
+const getContactByID = async (req, res, next) => {
   try {
     Logger.info("getContactByID called");
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
     validateID(userID);
     validateID(contactID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
 
-    const contact = user.getContactByID(contactID);
+    const contact = await User.getContactByID(userID, contactID);
     Logger.info("getContactByID controller ended.");
 
     res.status(200).json(contact);
@@ -80,7 +80,7 @@ const getContactByID = (req, res, next) => {
   }
 };
 
-const updateContactByID = (req, res, next) => {
+const updateContactByID = async (req, res, next) => {
   try {
     Logger.info("updateContactByID called");
     const { parameter, value } = req.body;
@@ -88,21 +88,22 @@ const updateContactByID = (req, res, next) => {
     const contactID = parseInt(req.params.contactID);
     validateID(userID);
     validateID(contactID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
-    if (typeof parameter != "string")
-      throw new Error("invalid parameter type...");
 
-    const updatedContact = user.updateStaffContactByID(
+    if (typeof parameter != "string")
+      throw new BadRequest("invalid parameter type...");
+
+    const updatedContact = await User.updateStaffContactByID(
+      userID,
       contactID,
       parameter,
       value
     );
-    if (updatedContact == null)
+    if (!updatedContact)
       throw new Error("Contact not found or updation failed...");
     Logger.info("updateContactByID controller ended");
     res.status(200).json(updatedContact);
@@ -111,25 +112,24 @@ const updateContactByID = (req, res, next) => {
   }
 };
 
-const deleteContactByID = (req, res) => {
+const deleteContactByID = async (req, res) => {
   try {
     Logger.info("deleteContactByID called");
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
     validateID(userID);
     validateID(contactID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
     try {
-      user.deleteStaffContactByID(contactID);
+      await User.deleteStaffContactByID(userID, contactID);
     } catch (error) {
       return res
         .status(404)
-        .json({ error: "Contact not found or deletion failed" });
+        .json({ message: "Contact not found or deletion failed" });
     }
     Logger.info("deleteContactByID called");
     res.status(200).json({

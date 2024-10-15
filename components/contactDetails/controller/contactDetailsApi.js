@@ -9,16 +9,15 @@ const validateID = (id) => {
 
 //create contact details of user contact
 //post
-const createContactDetails = (req, res, next) => {
+const createContactDetails = async (req, res, next) => {
   try {
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
 
     validateID(userID);
     validateID(contactID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
@@ -29,7 +28,8 @@ const createContactDetails = (req, res, next) => {
     if (typeof emailType != "object")
       throw new BadRequest("invalid email type!");
 
-    const contactDetail = user.newContactDetails(
+    const contactDetail = await User.newContactDetails(
+      userID,
       contactID,
       numberType,
       emailType
@@ -41,23 +41,21 @@ const createContactDetails = (req, res, next) => {
 };
 
 //get all contact details
-const getAllContactDetailsOfUser = (req, res, next) => {
+const getAllContactDetailsOfUser = async (req, res, next) => {
   try {
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
 
     validateID(userID);
     validateID(contactID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
 
-    let allContactDetails = user.getAllContactDetails(contactID);
-    if (allContactDetails.length == 0)
-      throw new BadRequest("No contacts found...");
+    let allContactDetails = await User.getAllContactDetails(userID, contactID);
+
     res.status(200).json(allContactDetails);
   } catch (error) {
     next(error);
@@ -65,7 +63,7 @@ const getAllContactDetailsOfUser = (req, res, next) => {
 };
 
 //get contact details by id
-const getContactDetailsByID = (req, res, next) => {
+const getContactDetailsByID = async (req, res, next) => {
   try {
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
@@ -73,14 +71,17 @@ const getContactDetailsByID = (req, res, next) => {
     validateID(userID);
     validateID(contactID);
     validateID(cdID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
 
-    const contactDetail = user.getContactDetailsByID(contactID, cdID);
+    const contactDetail = await User.getContactDetailsByID(
+      userID,
+      contactID,
+      cdID
+    );
     res.status(200).json(contactDetail);
   } catch (error) {
     next(error);
@@ -88,7 +89,7 @@ const getContactDetailsByID = (req, res, next) => {
 };
 
 //update contact details
-const updateContactDetailsByID = (req, res, next) => {
+const updateContactDetailsByID = async (req, res, next) => {
   try {
     const { parameter, value } = req.body;
     const userID = parseInt(req.params.userID);
@@ -98,9 +99,8 @@ const updateContactDetailsByID = (req, res, next) => {
     validateID(userID);
     validateID(contactID);
     validateID(cdID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
@@ -108,7 +108,8 @@ const updateContactDetailsByID = (req, res, next) => {
     if (typeof parameter != "string")
       throw new Error("invalid parameter type...");
 
-    const updatedContactDetail = user.updateContactDetailsByID(
+    const updatedContactDetail = await User.updateContactDetailsByID(
+      userID,
       contactID,
       cdID,
       parameter,
@@ -122,7 +123,7 @@ const updateContactDetailsByID = (req, res, next) => {
   }
 };
 
-const deleteContactDetailsByID = (req, res) => {
+const deleteContactDetailsByID = async (req, res) => {
   try {
     const userID = parseInt(req.params.userID);
     const contactID = parseInt(req.params.contactID);
@@ -131,15 +132,14 @@ const deleteContactDetailsByID = (req, res) => {
     validateID(userID);
     validateID(contactID);
     validateID(cdID);
-    let admin = User.allAdmin[0];
 
-    let user = admin.getStaffByID(userID);
+    let user = await User.getStaffByID(userID);
     if (!user) {
       throw new NotFoundError("user not found");
     }
 
     try {
-      user.deleteStaffContactDetailByID(contactID, cdID);
+      await User.deleteStaffContactDetailByID(userID, contactID, cdID);
     } catch (error) {
       return res
         .status(404)
